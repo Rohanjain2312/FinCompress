@@ -1,0 +1,40 @@
+# Model checkpoints (large binary files — tracked via checkpoint_info.json instead)
+checkpoints/
+!checkpoints/.gitkeep
+
+# Training logs (regenerated each run)
+logs/
+!logs/.gitkeep
+
+# Generated plot images (reproducible from notebook 05)
+results/plots/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment secrets
+.env
+
+# Weights & Biases run artifacts
+wandb/
+
+# HuggingFace model binaries (large)
+*.bin
+*.safetensors
+
+# Raw dataset CSVs (downloaded fresh via prepare_dataset.py)
+data/train.csv
+data/val.csv
+data/test.csv
+
+# macOS metadata
+.DS_Store
+
+# -------------------------------------------------------
+# DO NOT IGNORE — these are committed project artifacts:
+# results/benchmark_results.json
+# results/benchmark_results.csv
+# results/pruning_curve.csv
+# -------------------------------------------------------
