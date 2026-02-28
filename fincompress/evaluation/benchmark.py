@@ -173,17 +173,15 @@ def load_student_model(checkpoint_dir: Path, is_quantized: bool) -> Optional[nn.
         )
 
         if is_quantized:
-            # For quantized models: apply the same qconfig used during PTQ/QAT,
-            # prepare the architecture (inserts quantized layer types), then
-            # load the quantized state dict.
+            # PTQ/QAT checkpoints were saved from a quantize_dynamic model
+            # (DynamicQuantizedLinear keys). Static prepare+convert produces
+            # nnq.Linear keys — wrong structure and same matmul/QuantizedCPU
+            # crash. Apply quantize_dynamic first so the model structure
+            # matches the saved state dict.
             torch.backends.quantized.engine = "fbgemm"
-            model.qconfig = torch.quantization.get_default_qconfig("fbgemm")
-            model.token_embedding.qconfig = None
-            model.position_embedding.qconfig = None
-            model.segment_embedding.qconfig = None
-            model.classifier.qconfig = None
-            torch.quantization.prepare(model, inplace=True)
-            torch.quantization.convert(model, inplace=True)
+            model = torch.quantization.quantize_dynamic(
+                model, {nn.Linear}, dtype=torch.qint8
+            )
 
         state_dict = torch.load(
             checkpoint_dir / "pytorch_model.bin",
