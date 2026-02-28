@@ -400,11 +400,16 @@ def main() -> None:
                 f"Run 'python -m {script}' first to generate it."
             )
 
-    # --- wandb ---
+    # --- wandb (optional — disabled automatically if WANDB_API_KEY is not set) ---
+    import os as _os
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    _wandb_mode = "online" if _os.environ.get("WANDB_API_KEY") else "disabled"
+    if _wandb_mode == "disabled":
+        print("WandB disabled (no WANDB_API_KEY found). Training metrics logged to CSV only.")
     wandb.init(
         project="fincompress",
         name=f"pruning_{timestamp}",
+        mode=_wandb_mode,
         config={
             "head_fraction_per_round": PRUNING_HEAD_FRACTION_PER_ROUND,
             "max_rounds": PRUNING_MAX_ROUNDS,

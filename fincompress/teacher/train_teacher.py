@@ -256,11 +256,14 @@ def main() -> None:
             "Run 'python -m fincompress.data.prepare_dataset' first to generate it."
         )
 
-    # --- wandb ---
+    # --- wandb (optional — disabled automatically if WANDB_API_KEY is not set) ---
+    import os as _os
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    _wandb_mode = "online" if _os.environ.get("WANDB_API_KEY") else "disabled"
     wandb.init(
         project="fincompress",
         name=f"teacher_{timestamp}",
+        mode=_wandb_mode,
         config={
             "model_name": TEACHER_MODEL_NAME,
             "epochs": TEACHER_EPOCHS,
@@ -273,6 +276,8 @@ def main() -> None:
             "seed": SEED,
         },
     )
+    if _wandb_mode == "disabled":
+        print("WandB disabled (no WANDB_API_KEY found). Training metrics logged to CSV only.")
 
     # --- Load model and tokenizer ---
     print(f"Loading {TEACHER_MODEL_NAME}...")
