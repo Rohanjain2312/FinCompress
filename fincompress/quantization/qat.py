@@ -382,10 +382,34 @@ def main() -> None:
     best_val_f1 = train_qat(model, train_loader, val_loader, device)
 
     # --- Convert to INT8 ---
-    # After QAT, the FakeQuantize nodes are replaced with real INT8 quantized ops.
+    # torch.quantization.convert() would crash at inference: after QAT, the
+    # encoder's Linear layers are nnqat.Linear which convert() turns into
+    # nnq.Linear (outputting quantized tensors). The custom torch.matmul in
+    # MultiHeadSelfAttention then fails with "Could not run aten::matmul from
+    # QuantizedCPU" — same root cause as PTQ static conversion.
+    #
+    # Fix: transfer the QAT-trained weights (float32, now quantization-friendly)
+    # into a fresh StudentClassifier, then apply dynamic quantization.
+    # The QAT benefit is preserved: weights were optimized to land near INT8
+    # grid points, so dynamic INT8 conversion incurs less rounding error than
+    # it would on a non-QAT-trained model.
     model.cpu()
     model.eval()
-    torch.quantization.convert(model, inplace=True)
+
+    fresh_model = StudentClassifier(
+        hidden_size=STUDENT_HIDDEN_SIZE,
+        num_layers=STUDENT_NUM_LAYERS,
+        num_heads=STUDENT_NUM_HEADS,
+        intermediate_size=STUDENT_INTERMEDIATE_SIZE,
+        dropout=STUDENT_DROPOUT,
+        num_classes=NUM_CLASSES,
+    )
+    # strict=False: QAT state dict contains observer sub-keys (scale, zero_point,
+    # fake_quant_enabled, etc.) that don't exist in the fresh model — silently skipped.
+    fresh_model.load_state_dict(model.state_dict(), strict=False)
+    fresh_model.eval()
+    torch.backends.quantized.engine = "fbgemm"
+    model = torch.quantization.quantize_dynamic(fresh_model, {nn.Linear}, dtype=torch.qint8)
 
     quant_size_mb = get_model_size_mb(model)
     compression_ratio = original_size_mb / quant_size_mb
