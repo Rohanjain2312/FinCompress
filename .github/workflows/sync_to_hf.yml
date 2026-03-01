@@ -34,8 +34,9 @@ jobs:
           git clone https://rohanjain2312:${HF_TOKEN}@huggingface.co/spaces/rohanjain2312/FinCompress /tmp/hf_repo
 
           # Overwrite Space files with everything inside hf_space/
-          # (rsync --delete removes stale files from the Space)
-          rsync -av --delete hf_space/ /tmp/hf_repo/
+          # --exclude='.git' is critical: without it rsync --delete wipes the
+          # cloned repo's .git/ directory and the subsequent git push fails.
+          rsync -av --delete --exclude='.git' hf_space/ /tmp/hf_repo/
 
           # Commit and push if there are changes
           cd /tmp/hf_repo
