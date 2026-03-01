@@ -1,5 +1,5 @@
-# HF Spaces pre-installs torch — do NOT pin it here (causes numpy ABI conflicts).
-# Only list packages that Spaces does not pre-install.
+# Do NOT pin torch to a specific version — version conflicts cause numpy ABI errors.
 gradio==6.6.0
+torch
 transformers>=4.38.2,<5.0.0
 huggingface_hub>=0.20.0
