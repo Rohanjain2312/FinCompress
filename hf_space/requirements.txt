@@ -1,0 +1,5 @@
+# HF Spaces pre-installs torch — do NOT pin it here (causes numpy ABI conflicts).
+# Only list packages that Spaces does not pre-install.
+gradio==6.6.0
+transformers>=4.38.2,<5.0.0
+huggingface_hub>=0.20.0

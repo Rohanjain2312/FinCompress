@@ -1,0 +1,47 @@
+name: Sync hf_space/ to HuggingFace Space
+
+# Triggers on every push to main that touches the Space files.
+# Requires HF_TOKEN secret in GitHub repo settings:
+#   Settings → Secrets and variables → Actions → New repository secret
+#   Name: HF_TOKEN  |  Value: your HuggingFace write-access token
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "hf_space/**"
+      - ".github/workflows/sync_to_hf.yml"
+
+jobs:
+  sync-to-hf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Push hf_space/ to HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+          # Clone the HF Space repo into a temp directory
+          git clone https://rohanjain2312:${HF_TOKEN}@huggingface.co/spaces/rohanjain2312/FinCompress /tmp/hf_repo
+
+          # Overwrite Space files with everything inside hf_space/
+          # (rsync --delete removes stale files from the Space)
+          rsync -av --delete hf_space/ /tmp/hf_repo/
+
+          # Commit and push if there are changes
+          cd /tmp/hf_repo
+          git add -A
+          if git diff --staged --quiet; then
+            echo "Nothing changed — skipping push."
+          else
+            git commit -m "Sync from GitHub @ ${{ github.sha }}"
+            git push
+          fi
