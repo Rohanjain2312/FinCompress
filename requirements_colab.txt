@@ -1,8 +1,13 @@
-# Packages not listed here (numpy, pandas, scipy, matplotlib, seaborn, scikit-learn)
-# are left to Colab's pre-installed versions. Pinning them causes binary
-# incompatibilities when pip downgrades Colab's native numpy, breaking
-# pre-compiled C extensions in pandas/scipy (numpy.dtype size error).
-torch==2.2.0
+# ── Colab-specific requirements ───────────────────────────────────────────────
+# torch, numpy, scipy, pandas, matplotlib, seaborn, scikit-learn are NOT listed
+# here — Colab pre-installs compatible, CUDA-enabled versions of all of them.
+#
+# Pinning torch or numpy causes pip to downgrade Colab's pre-installed numpy 2.x
+# to numpy 1.x. Packages compiled against numpy 2.x (scipy, pandas) then fail
+# with: ValueError: numpy.dtype size changed (Expected 96, got 88)
+# This is a binary ABI incompatibility introduced in numpy 2.0.
+#
+# Only list packages that Colab does NOT pre-install:
 transformers==4.38.2
 datasets==2.18.0
 wandb==0.16.4
