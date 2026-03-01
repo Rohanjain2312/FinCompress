@@ -11,6 +11,7 @@ on:
     paths:
       - "hf_space/**"
       - ".github/workflows/sync_to_hf.yml"
+  workflow_dispatch:  # allows manual trigger from GitHub Actions tab
 
 jobs:
   sync-to-hf:
