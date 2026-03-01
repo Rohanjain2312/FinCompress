@@ -1,6 +1,7 @@
 # FinCompress — Compressing FinBERT for Production Inference
 
 [![Live Demo](https://img.shields.io/badge/🤗%20Live%20Demo-HF%20Spaces-blue)](https://huggingface.co/spaces/rohanjain2312/FinCompress)
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1J7Pukro1HISlPITOB8d2Xp-VF27TLu4o?usp=sharing)
 [![Model](https://img.shields.io/badge/🤗%20Student%20Weights-HF%20Hub-orange)](https://huggingface.co/rohanjain2312/FinCompress_student)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch)](https://pytorch.org/)
@@ -30,7 +31,7 @@ A systematic compression study on **FinBERT** (ProsusAI/finbert — BERT-base pr
 | Try it | |
 |---|---|
 | 🤗 [HF Spaces — no setup required](https://huggingface.co/spaces/rohanjain2312/FinCompress) | Teacher vs. student side-by-side, live benchmark table |
-| 📓 [Google Colab — full pipeline](notebooks/fincompress_complete.ipynb) | Single notebook: train all 7 variants on a T4 GPU |
+| [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1J7Pukro1HISlPITOB8d2Xp-VF27TLu4o?usp=sharing) | Full pipeline with all cell outputs — no GPU needed to read results |
 
 ---
 
@@ -108,7 +109,9 @@ Training hardware: Google Colab T4 GPU. Benchmarking: CPU (median latency over 5
 
 ### Colab — full pipeline (recommended)
 
-Open [`notebooks/fincompress_complete.ipynb`](notebooks/fincompress_complete.ipynb) in Google Colab with a T4 GPU runtime. The notebook runs the complete pipeline top-to-bottom: dataset prep → teacher training → distillation → quantization → pruning → benchmarking → plots. Runtime: ~3–4 hours total.
+[![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1J7Pukro1HISlPITOB8d2Xp-VF27TLu4o?usp=sharing)
+
+Open the notebook above — it already contains all cell outputs so you can read every result, plot, and benchmark table without running anything. To re-run from scratch, connect to a T4 GPU runtime. The notebook runs the complete pipeline top-to-bottom: dataset prep → teacher training → distillation → quantization → pruning → benchmarking → plots. Runtime: ~3–4 hours total.
 
 ### Local — benchmark only
 
