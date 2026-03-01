@@ -66,7 +66,11 @@ def load_financial_phrasebank() -> pd.DataFrame:
         DataFrame with columns [text, label].
     """
     try:
-        dataset = load_dataset("financial_phrasebank", "sentences_allagree", trust_remote_code=True)
+        # Use takala/financial_phrasebank — a Parquet-based mirror of the original
+        # dataset. The original financial_phrasebank uses a loading script that
+        # is no longer supported by datasets >= 2.20. This mirror is identical:
+        # same sentences_allagree split, same sentence/label columns.
+        dataset = load_dataset("takala/financial_phrasebank", "sentences_allagree")
     except Exception as e:
         print(f"ERROR: Failed to download financial_phrasebank: {e}")
         print("Check your internet connection or HuggingFace Hub status.")
@@ -92,7 +96,8 @@ def load_fiqa_sentiment() -> pd.DataFrame:
         DataFrame with columns [text, label].
     """
     try:
-        dataset = load_dataset("pauri32/fiqa-2018", trust_remote_code=True)
+        # trust_remote_code removed — no longer supported in datasets >= 2.20.
+        dataset = load_dataset("pauri32/fiqa-2018")
     except Exception as e:
         print(f"ERROR: Failed to download pauri32/fiqa-2018: {e}")
         print("Check your internet connection or HuggingFace Hub status.")
