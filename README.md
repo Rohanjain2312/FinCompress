@@ -1,14 +1,94 @@
-# FinCompress — A Practitioner's Study in Compressing FinBERT for Production Inference
+# FinCompress — Compressing FinBERT for Production Inference
 
-Systematically compress a domain-pretrained language model using three independent techniques, benchmarked end-to-end on identical hardware.
+[![Live Demo](https://img.shields.io/badge/🤗%20Live%20Demo-HF%20Spaces-blue)](https://huggingface.co/spaces/rohanjain2312/FinCompress)
+[![Model](https://img.shields.io/badge/🤗%20Student%20Weights-HF%20Hub-orange)](https://huggingface.co/rohanjain2312/FinCompress_student)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch)](https://pytorch.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ---
 
-## Motivation
+## About
 
-In production ML systems, inference cost dominates training cost by orders of magnitude. A sentiment model called 100,000 times per day incurs real infrastructure costs — every millisecond of latency multiplied by request volume equals dollars. The standard approach of deploying full-size BERT-family models (110M+ parameters) is often unsustainable.
+**Rohan Jain** — MS Machine Learning, University of Maryland
 
-FinCompress explores three families of compression techniques to answer: **how much can we compress FinBERT for financial sentiment classification before accuracy becomes unacceptable?**
+MS ML student at UMD with a background in data science and analytics, focused on applied ML systems and NLP. This project explores a complete model compression pipeline — knowledge distillation, INT8 quantization, and structured pruning — applied to a domain-specific financial NLP model. The goal: get a production-viable model that actually fits on a CPU, not just one that scores well in a notebook.
+
+| | |
+|---|---|
+| 🐙 GitHub | [github.com/Rohanjain2312](https://github.com/Rohanjain2312) |
+| 🤗 HuggingFace | [huggingface.co/rohanjain2312](https://huggingface.co/rohanjain2312) |
+| 💼 LinkedIn | [linkedin.com/in/jaroh23](https://www.linkedin.com/in/jaroh23/) |
+| 📧 Email | jaroh23@umd.edu |
+
+---
+
+## What It Is
+
+A systematic compression study on **FinBERT** (ProsusAI/finbert — BERT-base pre-trained on 4.9B tokens of financial text) for 3-class financial sentiment classification. Five compression techniques are implemented from scratch, each trained end-to-end on Google Colab and benchmarked on identical CPU hardware.
+
+| Try it | |
+|---|---|
+| 🤗 [HF Spaces — no setup required](https://huggingface.co/spaces/rohanjain2312/FinCompress) | Teacher vs. student side-by-side, live benchmark table |
+| 📓 [Google Colab — full pipeline](notebooks/fincompress_complete.ipynb) | Single notebook: train all 7 variants on a T4 GPU |
+
+---
+
+## Results
+
+Training hardware: Google Colab T4 GPU. Benchmarking: CPU (median latency over 500 runs, 50 warmup).
+
+| Model | Params | Size | Val Macro F1 | vs Teacher |
+|-------|--------|------|-------------|------------|
+| Teacher (FinBERT fine-tuned) | 109M | 437.9 MB | **0.8876** | baseline |
+| Student — Vanilla KD | 19M | 76.1 MB | 0.8017 | 5.8× smaller · −8.6 F1 pts |
+| Student — Intermediate KD | 19M | 76.1 MB | 0.7712 | 5.8× smaller · −11.6 F1 pts |
+| Student — PTQ (INT8) | 12M | 47.7 MB | 0.7712 | **9.1× smaller** · same F1 as FP32 |
+| Student — QAT (INT8) | 12M | 47.7 MB | 0.7601 | 9.1× smaller |
+| Pruned Teacher 30% | 109M | 437.9 MB | **0.8966** | ↑ beats teacher by +0.9 pts |
+| Pruned Teacher 50% | 109M | 437.9 MB | **0.8936** | ↑ beats teacher by +0.6 pts |
+
+**Surprising finding:** Removing 30–50% of attention heads *improved* accuracy. Low-entropy heads (near-uniform attention distributions) add noise rather than signal — pruning them acts as structured regularisation. Full latency and throughput numbers are in the executed notebook.
+
+---
+
+## Compression Pipeline
+
+```
+                   FinBERT Teacher
+                  (12 layers, 768d)
+                  ProsusAI/finbert
+                  Fine-tune on GPU
+                        │
+         ┌──────────────┼──────────────┐
+         │              │              │
+   Knowledge        Quantization   Structured
+   Distillation                     Pruning
+         │              │              │
+   ┌─────┴─────┐   ┌────┴────┐   ┌────┴────┐
+   │           │   │         │   │         │
+ Vanilla   Intermed.  PTQ    QAT  30%     50%
+   KD        KD    (INT8) (INT8) pruned  pruned
+ (4L/384d) (4L/384d)
+         │              │              │
+         └──────────────┴──────────────┘
+                        │
+               CPU Benchmark (7 variants)
+               Median latency · Macro F1 · Throughput
+```
+
+---
+
+## Engineering Concepts Demonstrated
+
+| Concept | Implementation |
+|---------|----------------|
+| **Knowledge distillation** | Soft-label KL divergence with temperature scaling (T=4) and T² gradient correction; layer-mapped hidden-state MSE + attention-pattern MSE for intermediate KD |
+| **INT8 dynamic quantization** | `torch.quantization.quantize_dynamic` (fbgemm backend); QAT with fake-quant ops and straight-through estimator (STE) for gradient-through-discrete-ops |
+| **Structured attention pruning** | Per-head entropy scoring over validation set; iterative prune + fine-tune recovery (5 rounds × 3 epochs); importance metric derived from attention distribution uniformity |
+| **Custom transformer from scratch** | 4-layer BERT-style encoder in pure `torch.nn` — multi-head self-attention, positional + segment + token embeddings, GELU FFN, LayerNorm residuals |
+| **Benchmarking protocol** | Median-over-500 CPU latency (not mean — right-skewed distribution from GC pauses); 50 warmup runs; throughput measured at batch=32 |
+| **End-to-end reproducibility** | Single Colab notebook trains all 7 variants in sequence; `checkpoint_info.json` per model captures hyperparameters + metrics + timestamp |
 
 ---
 
@@ -16,64 +96,56 @@ FinCompress explores three families of compression techniques to answer: **how m
 
 | Technique | Method | Reference |
 |-----------|--------|-----------|
-| **Knowledge Distillation** (vanilla) | Train a 4-layer student to match teacher output logits (soft labels) | [Hinton et al., 2015](https://arxiv.org/abs/1503.02531) |
-| **Knowledge Distillation** (intermediate) | Add hidden state + attention pattern supervision at matched layers | [TinyBERT, Jiao et al., 2020](https://arxiv.org/abs/1909.10351) |
-| **INT8 PTQ** | Post-training quantization with activation calibration | [PyTorch Quantization Docs](https://pytorch.org/docs/stable/quantization.html) |
-| **INT8 QAT** | Quantization-aware training with straight-through estimator | [PyTorch QAT Guide](https://pytorch.org/blog/quantization-in-practice/) |
-| **Structured Pruning** | Iterative attention head pruning with recovery fine-tuning | [Michel et al., 2019](https://arxiv.org/abs/1905.10650) |
+| **Vanilla KD** | Soft-label KL loss + CE loss, temperature scaling | [Hinton et al., 2015](https://arxiv.org/abs/1503.02531) |
+| **Intermediate KD** | Hidden-state MSE + attention-pattern MSE at mapped layers | [TinyBERT, Jiao et al., 2020](https://arxiv.org/abs/1909.10351) |
+| **INT8 PTQ** | Post-training dynamic quantization (fbgemm) | [PyTorch Quantization](https://pytorch.org/docs/stable/quantization.html) |
+| **INT8 QAT** | Fake-quant + straight-through estimator fine-tuning | [PyTorch QAT Guide](https://pytorch.org/blog/quantization-in-practice/) |
+| **Structured Pruning** | Entropy-based head importance, iterative prune + recover | [Michel et al., 2019](https://arxiv.org/abs/1905.10650) |
 
 ---
 
-## Architecture Diagram
+## How to Run
 
+### Colab — full pipeline (recommended)
+
+Open [`notebooks/fincompress_complete.ipynb`](notebooks/fincompress_complete.ipynb) in Google Colab with a T4 GPU runtime. The notebook runs the complete pipeline top-to-bottom: dataset prep → teacher training → distillation → quantization → pruning → benchmarking → plots. Runtime: ~3–4 hours total.
+
+### Local — benchmark only
+
+```bash
+git clone https://github.com/Rohanjain2312/FinCompress.git
+cd FinCompress/fincompress
+pip install -r requirements.txt
+
+# Download checkpoints from Google Drive into fincompress/checkpoints/
+python -m fincompress.evaluation.benchmark
 ```
-                    FinBERT Teacher
-                   (12 layers, 768d)
-                   ProsusAI/finbert
-                         │
-          ┌──────────────┼──────────────┐
-          │              │              │
-    Knowledge         Quantization   Structured
-    Distillation                      Pruning
-          │              │              │
-    ┌─────┴─────┐   ┌────┴────┐   ┌────┴────┐
-    │           │   │         │   │         │
-  Vanilla   Intermed.  PTQ    QAT  30%     50%
-    KD        KD    (INT8) (INT8) pruned  pruned
-  (4L/384d) (4L/384d)
-          │              │              │
-          └──────────────┴──────────────┘
-                         │
-                   Benchmark (CPU)
-                   results/benchmark_results.csv
-                         │
-                   Analysis + Plots
-                   notebooks/05_analysis_and_plots.ipynb
+
+### Local — dataset prep only
+
+```bash
+python -m fincompress.data.prepare_dataset
+# → fincompress/data/train.csv, val.csv, test.csv
 ```
 
 ---
 
-## Results
+## Key Learnings
 
-> **Fill this table after running the benchmark.**
+### Knowledge Distillation
+- Soft labels encode class uncertainty that hard one-hot labels discard — the teacher's [0.05, 0.72, 0.23] output teaches far more than the label "neutral"
+- **T² scaling is non-optional:** high temperature flattens the soft distribution, reducing gradient magnitude of the KL term; multiplying by T² restores it — without this, CE loss dominates and you lose most of the distillation signal
+- Layer mapping strategy matters: evenly-spaced pairing `{0→2, 1→5, 2→8, 3→11}` forces the student to mimic the full representational hierarchy (syntactic early layers, semantic middle, task-specific final), not just the output layers
 
-| Model | Params | Size (MB) | Macro F1 | CPU Latency (ms) | Throughput (sps) |
-|-------|--------|-----------|----------|-----------------|-----------------|
-| Teacher (FinBERT) | — | — | — | — | — |
-| Vanilla KD | — | — | — | — | — |
-| Intermediate KD | — | — | — | — | — |
-| INT8 PTQ | — | — | — | — | — |
-| INT8 QAT | — | — | — | — | — |
-| Pruned 30% | — | — | — | — | — |
-| Pruned 50% | — | — | — | — | — |
+### INT8 Quantization
+- PTQ is nearly free — apply it as the first compression step before committing to QAT's training cost
+- The first and last layers are sensitivity cliffs: quantizing the embedding layer and final classifier causes disproportionate F1 loss; `quantize_dynamic` wisely excludes them by default
+- **STE is elegant:** the straight-through estimator propagates gradients through the floor() rounding operation as if it were identity during backprop — a simple trick that makes an otherwise non-differentiable step trainable
 
----
-
-## Pareto Plot
-
-> `results/plots/pareto_plot.png` — will appear here after running notebook 05.
-
-The Pareto plot visualizes the accuracy vs. latency trade-off, with bubble size proportional to model size. Points toward the top-left corner dominate (higher accuracy, lower latency).
+### Structured Pruning
+- 30–50% of FinBERT's attention heads are redundant for 3-class financial sentiment — entropy scoring identifies them cheaply without computing saliency gradients
+- **The regularisation effect is real:** removing redundant heads reduced overfitting enough to improve val F1 by +0.9 pts — the original teacher was slightly over-parameterised for this task
+- The accuracy cliff is sharp: there is a head-count threshold beyond which each additional pruning round causes rapid F1 collapse; iterative pruning with recovery rounds defers this cliff significantly
 
 ---
 
@@ -82,115 +154,46 @@ The Pareto plot visualizes the accuracy vs. latency trade-off, with bubble size 
 ```
 fincompress/
 ├── data/
-│   └── prepare_dataset.py          Download + merge + split datasets (Local/CPU)
+│   └── prepare_dataset.py           Download + merge + split (CPU)
 ├── teacher/
-│   └── train_teacher.py            Fine-tune FinBERT teacher (Colab/GPU)
+│   └── train_teacher.py             Fine-tune FinBERT teacher (Colab/GPU)
 ├── distillation/
-│   ├── student_architecture.py     4-layer transformer student from scratch
-│   ├── soft_label_distillation.py  Vanilla KD training loop (Colab/GPU)
-│   └── intermediate_distillation.py Intermediate layer KD (Colab/GPU)
+│   ├── student_architecture.py      4-layer custom transformer from scratch
+│   ├── soft_label_distillation.py   Vanilla KD training loop (Colab/GPU)
+│   └── intermediate_distillation.py Hidden + attention KD (Colab/GPU)
 ├── quantization/
-│   ├── ptq.py                      Post-training INT8 quantization (Local/CPU)
-│   └── qat.py                      Quantization-aware training (Colab/GPU)
+│   ├── ptq.py                       Post-training INT8 quantization (CPU)
+│   └── qat.py                       Quantization-aware training (Colab/GPU)
 ├── pruning/
-│   ├── structured_pruning.py       Head/neuron importance + pruning utilities
-│   └── prune_finetune.py           Iterative prune + recover loop (Colab/GPU)
+│   ├── structured_pruning.py        Entropy-based head scoring + pruning
+│   └── prune_finetune.py            Iterative prune + recover loop (Colab/GPU)
 ├── evaluation/
-│   └── benchmark.py                Master benchmark script (Local/CPU)
-├── demo/
-│   └── app.py                      Gradio side-by-side comparison app (Local/CPU)
-├── notebooks/
-│   ├── 01_teacher_training.ipynb   Teacher walkthrough (Colab/GPU)
-│   ├── 02_distillation.ipynb       Distillation walkthrough (Colab/GPU)
-│   ├── 03_quantization.ipynb       Quantization walkthrough (Colab/GPU or Local/CPU)
-│   ├── 04_pruning.ipynb            Pruning walkthrough (Colab/GPU)
-│   └── 05_analysis_and_plots.ipynb Final benchmark plots (Local/CPU)
-├── checkpoints/                    Model checkpoints (gitignored — large binaries)
-├── results/                        benchmark_results.csv/json committed here
-├── logs/                           Training CSVs (gitignored)
-├── requirements.txt                Local/CPU dependencies
-└── requirements_colab.txt          Colab/GPU dependencies (adds ipywidgets)
-```
-
----
-
-## Quickstart
-
-### 1. Install dependencies (local)
-
-```bash
-git clone https://github.com/Rohanjain2312/FinCompress.git
-cd FinCompress/fincompress
-pip install -r requirements.txt
-```
-
-### 2. Prepare dataset (Local/CPU)
-
-```bash
-python -m fincompress.data.prepare_dataset
-# → fincompress/data/train.csv, val.csv, test.csv
-```
-
-### 3. Training order
-
-```
-Step 1 (Local):  python -m fincompress.data.prepare_dataset
-Step 2:          Upload fincompress/data/ to Google Drive
-Step 3 (Colab):  Run notebook 01 — teacher training
-Step 4 (Colab):  Run notebook 02 — distillation (vanilla then intermediate)
-Step 5 (Colab):  Run notebook 03 Section B — QAT
-Step 6 (Colab):  Run notebook 04 — pruning
-Step 7:          Download all checkpoints from Drive to local fincompress/checkpoints/
-Step 8 (Local):  python -m fincompress.quantization.ptq
-Step 9 (Local):  python -m fincompress.evaluation.benchmark
-Step 10 (Local): Run notebook 05 — all plots
-Step 11 (Local): python -m fincompress.demo.app
-```
-
-### 4. Run the demo
-
-```bash
-python -m fincompress.demo.app
-# Opens Gradio UI at http://localhost:7860
+│   └── benchmark.py                 Master benchmark — 7 variants, CPU
+├── checkpoints/                     Gitignored (large binaries on Drive)
+│   └── */checkpoint_info.json       ✅ Committed — hyperparams + metrics
+├── results/                         benchmark_results.csv/json committed here
+└── logs/                            Training CSVs (gitignored)
+notebooks/
+└── fincompress_complete.ipynb       Single notebook — full pipeline on Colab
+hf_space/
+└── app.py                           Gradio 6 demo → HF Spaces
 ```
 
 ---
 
 ## Hardware Requirements
 
-| Task | Hardware | Notes |
-|------|----------|-------|
-| Dataset prep | Any CPU | ~1 min |
-| Teacher fine-tuning | GPU (≥8 GB VRAM) | ~30 min on T4 |
-| Knowledge distillation | GPU (≥8 GB VRAM) | ~45 min per variant on T4 |
-| QAT | GPU (≥8 GB VRAM) | ~15 min on T4 |
-| Pruning | GPU (≥8 GB VRAM) | ~60 min on T4 |
-| PTQ + Benchmarking | CPU (x86) | ~10 min |
-| Demo | CPU | Real-time |
+| Task | Hardware | Est. Time |
+|------|----------|-----------|
+| Dataset prep | Any CPU | ~2 min |
+| Teacher fine-tuning | GPU ≥ 8 GB VRAM | ~30 min on T4 |
+| Vanilla KD | GPU ≥ 8 GB VRAM | ~30 min on T4 |
+| Intermediate KD | GPU ≥ 8 GB VRAM | ~45 min on T4 |
+| QAT | GPU ≥ 8 GB VRAM | ~15 min on T4 |
+| Pruning (both variants) | GPU ≥ 8 GB VRAM | ~60 min on T4 |
+| PTQ + Benchmarking | CPU (x86) | ~15 min |
 
-Google Colab (free tier) is sufficient for all GPU tasks.
-
----
-
-## Key Learnings
-
-### Knowledge Distillation
-- Soft labels from the teacher encode class similarity and uncertainty that hard one-hot labels discard
-- T² scaling is non-optional: without it, high temperature makes the KL loss negligible
-- Intermediate distillation consistently outperforms vanilla KD by ~1-3 F1 points for BERT-family compression
-- **What I learned:** The layer mapping choice (evenly spaced vs. last-N) materially affects student quality — evenly spaced forces the student to mimic the full representational hierarchy
-
-### INT8 Quantization
-- PTQ is nearly free (no training); use it as the first compression attempt before committing to QAT
-- Backend selection matters for benchmarking validity — fbgemm vs. qnnpack targets different SIMD instruction sets
-- The first and last layers are sensitivity cliffs: quantizing them causes disproportionate accuracy loss
-- **What I learned:** QAT's straight-through estimator is elegant — it solves the gradient problem of discrete operations without changing the forward-pass semantics
-
-### Structured Pruning
-- 30-50% of attention heads in FinBERT are redundant for 3-class financial sentiment
-- The "accuracy cliff" is real and sharp: there's typically a threshold beyond which additional pruning causes rapid F1 degradation
-- Structured pruning requires actual dimension reduction (not just zeroing) to deliver real speedups on standard hardware
-- **What I learned:** Entropy-based importance scoring is a surprisingly effective proxy for the more expensive gradient-based methods described in the literature
+Google Colab free tier (T4) is sufficient for all GPU tasks.
 
 ---
 
@@ -199,14 +202,20 @@ Google Colab (free tier) is sufficient for all GPU tasks.
 1. Hinton, G., Vinyals, O., Dean, J. (2015). [Distilling the Knowledge in a Neural Network](https://arxiv.org/abs/1503.02531)
 2. Jiao, X. et al. (2020). [TinyBERT: Distilling BERT for Natural Language Understanding](https://arxiv.org/abs/1909.10351)
 3. Michel, P. et al. (2019). [Are Sixteen Heads Really Better Than One?](https://arxiv.org/abs/1905.10650). NeurIPS 2019.
-4. PyTorch Quantization Documentation. [Static Quantization](https://pytorch.org/docs/stable/quantization.html)
-5. Araci, D. (2019). [FinBERT: Financial Sentiment Analysis with Pre-trained Language Models](https://arxiv.org/abs/1908.10063)
+4. Araci, D. (2019). [FinBERT: Financial Sentiment Analysis with Pre-trained Language Models](https://arxiv.org/abs/1908.10063)
+5. PyTorch Team. [Quantization — PyTorch Docs](https://pytorch.org/docs/stable/quantization.html)
+
+---
+
+## Development Notes
+
+The compression pipeline architecture, distillation loss formulations, student architecture design, benchmarking protocol, and all key engineering decisions were designed and authored by Rohan Jain. [Claude Code](https://claude.ai/code) was used as an implementation accelerator for boilerplate, file scaffolding, and debugging — similar to how a senior engineer uses Copilot while retaining full design ownership.
 
 ---
 
 ## License
 
-MIT License — see LICENSE file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 

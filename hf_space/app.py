@@ -287,6 +287,18 @@ with gr.Blocks(
                 """
                 ## FinCompress Compression Pipeline
 
+                **Built by Rohan Jain** — MS Machine Learning, University of Maryland
+
+                | | |
+                |---|---|
+                | 🐙 GitHub | [github.com/Rohanjain2312](https://github.com/Rohanjain2312) |
+                | 🤗 HuggingFace | [huggingface.co/rohanjain2312](https://huggingface.co/rohanjain2312) |
+                | 💼 LinkedIn | [linkedin.com/in/jaroh23](https://www.linkedin.com/in/jaroh23/) |
+                | 📧 Email | jaroh23@umd.edu |
+                | 📦 GitHub Repo | [FinCompress](https://github.com/Rohanjain2312/FinCompress) |
+
+                ---
+
                 **Starting point:** ProsusAI/finbert — BERT-base further pre-trained on 4.9B
                 tokens of financial text, then fine-tuned on `financial_phrasebank`.
                 Result: **109M params, 438 MB, 0.888 val Macro F1**.
