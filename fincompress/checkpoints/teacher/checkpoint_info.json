@@ -1,0 +1,19 @@
+{
+  "model_name": "teacher",
+  "technique": "teacher",
+  "val_macro_f1": 0.887626,
+  "num_parameters": 109484547,
+  "size_mb": 437.94,
+  "timestamp": "2026-03-01T01:36:51.224413+00:00",
+  "hyperparameters": {
+    "model_name": "ProsusAI/finbert",
+    "epochs": 5,
+    "lr": 2e-05,
+    "warmup_ratio": 0.1,
+    "early_stopping_patience": 3,
+    "batch_size": 32,
+    "max_seq_len": 128,
+    "weight_decay": 0.01,
+    "seed": 42
+  }
+}

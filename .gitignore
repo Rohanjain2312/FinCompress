@@ -1,6 +1,7 @@
 # Model checkpoints (large binary files — tracked via checkpoint_info.json instead)
 checkpoints/
 !checkpoints/.gitkeep
+!checkpoints/**/checkpoint_info.json
 
 # Training logs (regenerated each run)
 logs/

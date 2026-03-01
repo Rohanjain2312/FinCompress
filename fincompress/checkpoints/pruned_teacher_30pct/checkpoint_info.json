@@ -1,0 +1,16 @@
+{
+  "model_name": "pruned_30",
+  "technique": "pruned_30",
+  "val_macro_f1": 0.896647,
+  "num_parameters": 109484547,
+  "size_mb": 437.94,
+  "sparsity_pct": 29.17,
+  "timestamp": "2026-03-01T01:56:57.018011+00:00",
+  "hyperparameters": {
+    "head_fraction_per_round": 0.1,
+    "max_rounds": 5,
+    "recovery_epochs": 3,
+    "recovery_lr": 1e-05,
+    "seed": 42
+  }
+}

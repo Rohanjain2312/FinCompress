@@ -1,0 +1,16 @@
+{
+  "model_name": "student_qat",
+  "technique": "qat",
+  "val_macro_f1": 0.760134,
+  "num_parameters": 11924736,
+  "size_mb": 47.7,
+  "timestamp": "2026-03-01T01:48:14.475097+00:00",
+  "hyperparameters": {
+    "qat_epochs": 3,
+    "qat_lr": 1e-05,
+    "batch_size": 32,
+    "max_seq_len": 128,
+    "backend": "fbgemm",
+    "seed": 42
+  }
+}

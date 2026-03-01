@@ -1,0 +1,16 @@
+{
+  "model_name": "student_ptq",
+  "technique": "ptq",
+  "val_macro_f1": 0.771226,
+  "num_parameters": 11924736,
+  "size_mb": 47.7,
+  "timestamp": "2026-03-01T01:47:37.642984+00:00",
+  "hyperparameters": {
+    "quantization_type": "dynamic",
+    "quantized_layers": "nn.Linear (excl. classifier)",
+    "backend": "fbgemm",
+    "dtype": "qint8",
+    "source_checkpoint": "/content/drive/MyDrive/fincompress/fincompress/checkpoints/student_intermediate_kd",
+    "seed": 42
+  }
+}
