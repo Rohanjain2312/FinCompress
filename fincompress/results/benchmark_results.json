@@ -1,0 +1,82 @@
+{
+  "teacher": {
+    "model_name": "teacher",
+    "num_parameters": 109484547,
+    "size_mb": 437.95,
+    "macro_f1": 0.918242,
+    "accuracy": 0.926877,
+    "per_class_f1": {
+      "negative": 0.885246,
+      "neutral": 0.954751,
+      "positive": 0.914729
+    },
+    "cpu_latency_ms_median": 77.011,
+    "cpu_latency_ms_p95": 138.958,
+    "cpu_throughput_sps": 20.8,
+    "device": "cpu"
+  },
+  "student_vanilla_kd": {
+    "model_name": "student_vanilla_kd",
+    "num_parameters": 19017603,
+    "size_mb": 76.07,
+    "macro_f1": 0.771319,
+    "accuracy": 0.794466,
+    "per_class_f1": {
+      "negative": 0.673575,
+      "neutral": 0.86836,
+      "positive": 0.772021
+    },
+    "cpu_latency_ms_median": 12.099,
+    "cpu_latency_ms_p95": 16.34,
+    "cpu_throughput_sps": 158.5,
+    "device": "cpu"
+  },
+  "student_intermediate_kd": {
+    "model_name": "student_intermediate_kd",
+    "num_parameters": 19017603,
+    "size_mb": 76.07,
+    "macro_f1": 0.788139,
+    "accuracy": 0.812253,
+    "per_class_f1": {
+      "negative": 0.68,
+      "neutral": 0.880184,
+      "positive": 0.804233
+    },
+    "cpu_latency_ms_median": 12.0,
+    "cpu_latency_ms_p95": 23.63,
+    "cpu_throughput_sps": 170.0,
+    "device": "cpu"
+  },
+  "pruned_teacher_30pct": {
+    "model_name": "pruned_teacher_30pct",
+    "num_parameters": 109484547,
+    "size_mb": 437.95,
+    "macro_f1": 0.9215,
+    "accuracy": 0.93083,
+    "per_class_f1": {
+      "negative": 0.882051,
+      "neutral": 0.956916,
+      "positive": 0.925532
+    },
+    "cpu_latency_ms_median": 77.176,
+    "cpu_latency_ms_p95": 104.958,
+    "cpu_throughput_sps": 18.3,
+    "device": "cpu"
+  },
+  "pruned_teacher_50pct": {
+    "model_name": "pruned_teacher_50pct",
+    "num_parameters": 109484547,
+    "size_mb": 437.95,
+    "macro_f1": 0.912469,
+    "accuracy": 0.922925,
+    "per_class_f1": {
+      "negative": 0.868687,
+      "neutral": 0.95672,
+      "positive": 0.912
+    },
+    "cpu_latency_ms_median": 74.296,
+    "cpu_latency_ms_p95": 90.415,
+    "cpu_throughput_sps": 18.0,
+    "device": "cpu"
+  }
+}
